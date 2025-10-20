@@ -1,7 +1,7 @@
 # %%
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import polars as pl
 
 # %%
 # Reading data from a csv file
@@ -14,13 +14,15 @@ import matplotlib.pyplot as plt
 broken_df = pd.read_csv("../data/bikes.csv", encoding="ISO-8859-1")
 
 # TODO: please load the data with the Polars library (do not forget to import Polars at the top of the script) and call it pl_broken_df
-
+pl_broken_df = pl.read_csv("../data/bikes.csv", encoding="ISO-8859-1")
 # %%
 # Look at the first 3 rows
-broken_df[:3]
+print( "Pandas Data Frame first 3 rows:")
+print(broken_df[:3])
 
 # TODO: do the same with your polars data frame, pl_broken_df
-
+print( "Polars Data Frame first 3 rows:")
+pl_broken_df.slice(0,3)
 # %%
 # You'll notice that this is totally broken! `read_csv` has a bunch of options that will let us fix that, though. Here we'll
 
@@ -41,7 +43,12 @@ fixed_df = pd.read_csv(
 fixed_df[:3]
 
 # TODO: do the same (or similar) with polars
-
+pl_fixed_df = pl.read_csv(
+    "../data/bikes.csv",
+    separator=";", 
+    encoding="latin1")
+pl_fixed_df = pl_fixed_df.with_columns(pl.col("Date").str.to_date("%d/%m/%Y")) # Parsing dates with day first formatted by converting the string to date
+pl_fixed_df.slice(0,3) # Displaying first 3 rows
 
 # %%
 # Selecting a column
@@ -51,14 +58,18 @@ fixed_df[:3]
 fixed_df["Berri 1"]
 
 # TODO: how would you do this with a Polars data frame?
-
+pl_fixed_df.select("Berri 1")
 
 # %%
 # Plotting is quite easy in Pandas
+print("Plotting with Pandas:")
 fixed_df["Berri 1"].plot()
 
 # TODO: how would you do this with a Polars data frame?
-
+# Since matplotlib is in the pip list and Polars documentation/forums do not show a direct way to plot like pandas, I am going to cheat and convert the dataframe into Pandas for plotting.
+# Well I tried that but it didn't work directly, my mistake was I did not include the x and y parameters and was using the select function to select the column instead.
+print("Plotting with Polars:")
+pl_fixed_df.plot.line(x="Date", y="Berri 1")
 
 # %%
 # We can also plot all the columns just as easily. We'll make it a little bigger, too.
@@ -67,3 +78,17 @@ fixed_df["Berri 1"].plot()
 fixed_df.plot(figsize=(15, 10))
 
 # TODO: how would you do this with a Polars data frame? With Polars data frames you might have to use the Seaborn library and it mmight not work out of the box as with pandas.
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Converting from Polars to Pandas for easier plotting suggest by forums
+pd_pl_fixed_df = pl_fixed_df.to_pandas().set_index("Date")
+
+df_melted = pd_pl_fixed_df.reset_index().melt(id_vars="Date", var_name="Pathway", value_name="Count") #Melting the dataframe as we saw in the lecture slides 2
+print(df_melted.head())
+
+plt.clf() 
+sns.lineplot(data=df_melted, x="Date", y="Count", hue="Pathway")
+plt.title("Bike counts for all pathways using Seaborn")
+plt.show()
+# %%

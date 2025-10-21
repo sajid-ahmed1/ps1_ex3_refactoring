@@ -15,6 +15,8 @@ complaints.head()
 # you cannot exactly do the same in Polars but you can read about some other solutions here:
 # see a discussion about dtype argument here: https://github.com/pola-rs/polars/issues/8230
 
+pl_complaints = pl.read_csv("../data/311-service-requests.csv", infer_schema_length=0 )
+
 # %%
 # Selecting columns:
 complaints["Complaint Type"]
@@ -22,12 +24,15 @@ complaints["Complaint Type"]
 # %%
 # TODO: rewrite the above using the polars library
 
+pl_complaints.select("Complaint Type")
+
 # %%
 # Get the first 5 rows of a dataframe
 complaints[:5]
 
 # %%
 # TODO: rewrite the above using the polars library
+pl_complaints.limit(5)
 
 # %%
 # Combine these to get the first 5 rows of a column:
@@ -35,6 +40,7 @@ complaints["Complaint Type"][:5]
 
 # %%
 # TODO: rewrite the above using the polars library
+pl_complaints.select("Complaint Type").limit(5)
 
 
 # %%
@@ -43,6 +49,7 @@ complaints[["Complaint Type", "Borough"]]
 
 # %%
 # TODO: rewrite the above using the polars library
+pl_complaints.select(["Complaint Type", "Borough"])
 
 # %%
 # What's the most common complaint type?
@@ -51,6 +58,9 @@ complaint_counts[:10]
 
 # %%
 # TODO: rewrite the above using the polars library
+pl_complaint_counts = pl_complaints.select("Complaint Type").to_series().value_counts()
+pl_sorted = pl_complaint_counts.sort(by = "count", descending=True)
+pl_sorted.limit(10)
 
 # %%
 # Plot the top 10 most common complaints
@@ -62,5 +72,16 @@ plt.xticks(rotation=45, ha="right")
 plt.tight_layout()
 plt.show()
 
-# %%
-# TODO: please do the same with Polars
+#%%
+import altair as alt
+chart = (
+    pl_sorted.limit(10).plot.bar(
+        x = alt.X("Complaint Type").sort('-y'),
+        y = "count"
+    )
+    .properties(width = 250, title="Top 10 Complaint Types")
+    .configure_axisX(labelAngle=-45, labelAlign="right")
+)
+chart.encoding.x.title = "Complaint Type"
+chart.encoding.y.title = "Count"
+chart

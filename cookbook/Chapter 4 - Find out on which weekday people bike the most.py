@@ -1,6 +1,7 @@
 # %%
 import pandas as pd
 import matplotlib.pyplot as plt
+import polars as pl
 
 # Make the graphs a bit prettier, and bigger
 plt.style.use("ggplot")
@@ -13,7 +14,7 @@ pd.set_option("display.width", 5000)
 pd.set_option("display.max_columns", 60)
 
 # %% Load the data
-bikes = pd.read_csv(
+bikespd = pd.read_csv(
     "../data/bikes.csv",
     sep=";",
     encoding="latin1",
@@ -25,16 +26,29 @@ bikes["Berri 1"].plot()
 plt.show()
 
 # TODO: Load the data using Polars
+bikespl = pl.read_csv(
+    "../data/bikes.csv",
+    separator=";",
+    encoding="latin1",
+    try_parse_dates=True
+)
+
+print(bikes.schema) # Displaying the schema to check the date parsing, we can see that the dates are indeed parsed as Date type.
 
 # %% Plot Berri 1 data
 # Next up, we're just going to look at the Berri bike path. Berri is a street in Montreal, with a pretty important bike path. I use it mostly on my way to the library now, but I used to take it to work sometimes when I worked in Old Montreal.
 
 # So we're going to create a dataframe with just the Berri bikepath in it
-berri_bikes = bikes[["Berri 1"]].copy()
+berri_bikes = bikespd[["Berri 1"]].copy()
 berri_bikes[:5]
 
 # TODO: Create a dataframe with just the Berri bikepath using Polars
 # Hint: Use pl.DataFrame.select() and call the data frame pl_berri_bikes
+
+
+# Create a dataframe with just the Berri bikepath using Polars
+pl_berri_bikes = bikes.select(["Berri 1"])
+berri_bikes[:5]
 
 
 # %% Add weekday column
@@ -59,6 +73,14 @@ berri_bikes[:5]
 # TODO: Add a weekday column using Polars.
 # Hint: Polars does not use an index.
 
+# Add a weekday column using Polars
+pl_berri_bikes = bikes.select([
+    "Date",
+    "Berri 1",
+    pl.col("Date").dt.weekday().alias("weekday")
+])
+
+
 
 # %%
 # Let's add up the cyclists by weekday
@@ -72,6 +94,11 @@ weekday_counts
 
 # TODO: Group by weekday and sum using Polars
 
+pl_berri_weekday = pl_berri_bikes.group_by("weekday").agg(
+    pl.col("Berri 1").sum().alias("total")
+)
+
+print(pl_berri_weekday.sort("weekday"))
 
 # %% Rename index
 weekday_counts.index = [
@@ -85,6 +112,7 @@ weekday_counts.index = [
 ]
 
 # TODO: Rename index using Polars, if possible.
+#Polars does not have an index, there is nothing to rename as an index.
 
 
 # %% Plot results
